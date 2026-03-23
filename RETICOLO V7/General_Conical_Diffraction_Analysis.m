@@ -16,16 +16,20 @@ else
     warning('RETICOLO library not found at: %s', lib_path);
 end
 
-%% --- 2. GLOBAL PHYSICAL PARAMETERS ---
-wavelength = 10;       % LD: Operating wavelength
-period = 17;           % D: Grating period
+%% --- 2. GLOBAL PHYSICAL PARAMETERS (Units: nanometers) ---
+wavelength = 15;                % LD: 15 nm (Extreme UV / Soft X-ray)
+groove_density = 3600;          % G: Lines per mm
+period = 1e6 / groove_density;  % D: ~277.78 nm
+
 theta_inc = 10;        % Incident angle relative to the normal (deg)
-n_incident = 1;        % Refractive index of superstrate
+n_incident = 1;        % Refractive index of superstrate (Vacuum = 1)
 delta_conical = 20;    % Azimuthal rotation (delta0) - defines the cone
-num_harmonics = 15;    % nn: Fourier harmonics (precision vs. speed)
+num_harmonics = 30;    % Increased to 30 for better precision with high G
 
 % Calculate rho (transverse wavevector component)
 rho = n_incident * sind(theta_inc); 
+
+fprintf('Simulation set for Lambda = %g nm and Period = %.2f nm\n', wavelength, period);
 
 %% --- 3. TEXTURE DEFINITIONS (Horizontal Slices) ---
 % Define the horizontal refractive index distributions
