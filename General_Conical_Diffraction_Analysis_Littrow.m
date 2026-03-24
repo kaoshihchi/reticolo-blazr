@@ -10,13 +10,13 @@ lib_path = fullfile(pwd, 'RETICOLO V7', 'reticolo_allege');
 if exist(lib_path, 'dir'), addpath(genpath(lib_path)); end
 %% --- 2. PHYSICAL PARAMETERS (Units: nm, deg, L/mm) ---
 % --- Basic Grating & Light Properties ---
-wavelength = 4;                 % [nm]  Wavelength (LD)
-groove_density = 5000;          % [L/mm] G: lines/mm
+wavelength = 8;                 % [nm]  Wavelength (LD)
+groove_density = 3600;          % [L/mm] G: lines/mm
 period = 1e6 / groove_density;  % [nm]  D: ~200 nm
 m_order = -1;                   % Target diffraction order
 
 % --- Geometric Inputs (Experimental xz-plane definition) ---
-grazing_angle = 2;              % [deg] gamma: Angle between beam and groove (y-axis)
+grazing_angle = 3.75;              % [deg] gamma: Angle between beam and groove (y-axis)
 
 % --- Calculate the Quasi-Littrow Alpha (for beta = alpha) ---
 % Formula: sin(alpha) = |m|*lambda / (2 * d * sin(gamma))
@@ -37,13 +37,13 @@ delta_conical = atand(cosd(grazing_angle) / (sind(grazing_angle) * sind(alpha_xz
 % --- Polarization Settings ---
 % alpha_pol: 0 = TE (E perp to incident plane), 90 = TM (E in incident plane)
 alpha_pol = 0;                  
-num_harmonics = 50;             
+num_harmonics = 75;             
 rho = 1 * sind(theta_inc);
 %% --- 3. TEXTURE DEFINITIONS (Blazed Staircase) ---
 n_vacuum = 1.0; 
 n_BK7    = 1.516; 
 n_PEC    = 1000i;               % Perfect Conductor
-blaze_angle_deg = 14;         % [deg]
+blaze_angle_deg = 13.5;         % [deg]
 num_steps = 100;                 
 blaze_height = period * tand(blaze_angle_deg); % [nm]
 step_height = blaze_height / num_steps;        % [nm]
@@ -58,7 +58,8 @@ end
 parm = res0;
 parm.sym.x = [];       
 parm.sym.pol = 0;      
-parm.res1.champ = 1;            
+parm.res1.champ = 1;   
+parm.res1.vi = 1; % MUST HAVE for grazing angles < 5 degrees
 parm.res1.trace = plot_textures; % Control via switch (Figure 1)
 aa = res1(wavelength, period, textures, num_harmonics, rho, delta_conical, parm);
 if plot_textures, figure(1); title('Figure 1: Texture Permittivity'); end

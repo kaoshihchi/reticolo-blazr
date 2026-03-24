@@ -3,24 +3,32 @@
 %  =======================================================================
 clear; clc; close all;
 %% --- 1. SETTINGS & SWITCHES ---
-plot_textures = false;  % Set to true to see Figure 1 (Slow!)
+plot_textures = true;  % Set to true to see Figure 1 (Slow!)
 plot_geometry = true;   % Set to true to see Figure 2 (The Staircase)
 plot_fields   = true;   % Set to true to see Figure 4 (Shadowing/Fields)
 lib_path = fullfile(pwd, 'RETICOLO V7', 'reticolo_allege');
 if exist(lib_path, 'dir'), addpath(genpath(lib_path)); end
 %% --- 2. PHYSICAL PARAMETERS (Units: nm, deg, L/mm) ---
 % --- Basic Grating & Light Properties ---
-wavelength = 4;                 % [nm]  Wavelength (LD)
-groove_density = 5000;          % [L/mm] G: lines/mm
+wavelength = 10;                 % [nm]  Wavelength (LD)
+groove_density = 1200;          % [L/mm] G: lines/mm
 period = 1e6 / groove_density;  % [nm]  D: ~200 nm
-m_order = -1;                   % Target diffraction order to track
+m_order = -1;                   % Target diffraction order
 
-% --- Geometric Inputs (Manual xz-plane definition) ---
-grazing_angle = 2;              % [deg] gamma: Angle between beam and groove (y-axis)
-alpha_xz = 30;                 % [deg] MANUAL INPUT: Angle in xz-plane from Z-axis
+% --- Geometric Inputs (Experimental xz-plane definition) ---
+grazing_angle = 11.4;              % [deg] gamma: Angle between beam and groove (y-axis)
+
+% --- Calculate the Quasi-Littrow Alpha (for beta = alpha) ---
+% Formula: sin(alpha) = |m|*lambda / (2 * d * sin(gamma))
+sin_alpha_littrow = abs(m_order * wavelength / (2 * period * sind(grazing_angle)));
+
+if sin_alpha_littrow > 1
+    error('Physical Limit: Order m=%d is evanescent at lambda=%.1fnm, gamma=%.1fdeg.', ...
+        m_order, wavelength, grazing_angle);
+end
+alpha_xz = asind(sin_alpha_littrow); % Alpha in the xz-plane
 
 % --- RETICOLO COORDINATE TRANSFORMATION ---
-% Converts (gamma, alpha) -> (theta, delta)
 % theta_inc: acos(sin(gamma)*cos(alpha))
 % delta_conical: atan(cos(gamma) / (sin(gamma)*sin(alpha)))
 theta_inc = acosd(sind(grazing_angle) * cosd(alpha_xz));
@@ -35,7 +43,7 @@ rho = 1 * sind(theta_inc);
 n_vacuum = 1.0; 
 n_BK7    = 1.516; 
 n_PEC    = 1000i;               % Perfect Conductor
-blaze_angle_deg = 14;         % [deg]
+blaze_angle_deg = 1.5;         % [deg]
 num_steps = 100;                 
 blaze_height = period * tand(blaze_angle_deg); % [nm]
 step_height = blaze_height / num_steps;        % [nm]
@@ -139,41 +147,30 @@ end
 %% --- 8. EXPERIMENTAL TOTAL EFFICIENCY ANALYSIS ---
 idx_m1 = find(res_TE.order == m_order);
 fprintf('\n================== EXPERIMENTAL DATA SUMMARY ==================\n');
-fprintf('Input Parameters (xz-plane):\n');
-fprintf('  - Wavelength:             %.2f nm\n', wavelength);
+fprintf('Input Parameters (Experimental Layout):\n');
 fprintf('  - Grazing Angle (gamma):  %.2f deg\n', grazing_angle);
 fprintf('  - Incident Alpha (xz):    %.2f deg\n', alpha_xz);
-fprintf('\nConverted RETICOLO Inputs:\n');
+fprintf('  - Wavelength (lambda):    %.2f nm\n', wavelength);
+fprintf('\nInput Parameters (RETICOLO Internals):\n');
 fprintf('  - Polar Angle (theta):    %.4f deg\n', theta_inc);
 fprintf('  - Azimuthal (delta):      %.4f deg\n', delta_conical);
 fprintf('--------------------------------------------------------------\n');
 
 if ~isempty(idx_m1)
-    % Efficiencies
     eff_te = res_TE.efficiency(idx_m1(1)) * 100;
     eff_tm = res_TM.efficiency(idx_m1(1)) * 100;
     total_eff = eff_te * (cosd(alpha_pol)^2) + eff_tm * (sind(alpha_pol)^2);
     
-    % --- Calculate Diffracted Beta (xz-plane) ---
-    % Physics: sin(gamma)*sin(beta) = sin(gamma)*sin(alpha) + m*lambda/d
-    % RETICOLO gives us the normalized Kx = kx / k0.
-    % kx_reticolo = sin(theta_inc)*cos(delta_conical) + m*(lambda/period)
+    % --- Calculate Diffracted Beta (xz-plane) from RETICOLO K-vectors ---
+    % In RETICOLO: kx = sin(theta)*cos(delta). In xz: sin(gamma)*sin(beta) = kx.
     kx_out = res_TE.K(idx_m1(1), 1); 
+    beta_xz_out = asind(kx_out / sind(grazing_angle));
     
-    % beta = arcsin( kx_out / sin(gamma) )
-    sin_beta = kx_out / sind(grazing_angle);
-    
-    if abs(sin_beta) <= 1
-        beta_xz_out = asind(sin_beta);
-        fprintf('Results for Order m = %d:\n', m_order);
-        fprintf('  - TE Efficiency:            %7.4f %%\n', eff_te);
-        fprintf('  - TM Efficiency:            %7.4f %%\n', eff_tm);
-        fprintf('  >>> TOTAL EFFICIENCY:       %7.4f %%\n', total_eff);
-        fprintf('  - Diffracted Beta (xz):     %7.4f deg\n', beta_xz_out);
-        fprintf('  - Total Deviation (a+b):    %7.4f deg\n', alpha_xz + beta_xz_out);
-    else
-        fprintf('[ERROR] Math Error: Calculated sin(beta) = %.4f (Evanescent)\n', sin_beta);
-    end
+    fprintf('Results for Order m = %d:\n', m_order);
+    fprintf('  - TE Efficiency:            %7.4f %%\n', eff_te);
+    fprintf('  - TM Efficiency:            %7.4f %%\n', eff_tm);
+    fprintf('  >>> TOTAL EFFICIENCY:       %7.4f %%\n', total_eff);
+    fprintf('  - Diffracted Beta (xz):     %7.4f deg (Target: %.2f)\n', beta_xz_out, alpha_xz);
 else
     fprintf('[WARNING] Order m = %d is currently EVANESCENT.\n', m_order);
 end
