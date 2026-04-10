@@ -1,5 +1,6 @@
 %% ========================================================================
 %  RETICOLO: BLAZED GRATING - GRAZING INCIDENCE (REVISED VISUALS)
+% publish('General_Conical_Diffraction_Analysis_Littrow_5000.m', 'pdf')
 %  =======================================================================
 clear; clc; close all;
 %% --- 1. SETTINGS & SWITCHES ---
@@ -10,8 +11,8 @@ lib_path = fullfile(pwd, 'RETICOLO V7', 'reticolo_allege');
 if exist(lib_path, 'dir'), addpath(genpath(lib_path)); end
 %% --- 2. PHYSICAL PARAMETERS (Units: nm, deg, L/mm) ---
 % --- Basic Grating & Light Properties ---
-wavelength = 6.5;                 % [nm]  Wavelength (LD)
-groove_density = 3600;          % [L/mm] G: lines/mm
+wavelength = 7;                 % [nm]  Wavelength (LD)
+groove_density = 2400;          % [L/mm] G: lines/mm
 period = 1e6 / groove_density;  % [nm]  D: ~200 nm
 m_order = -1;                   % Target diffraction order
 
@@ -43,7 +44,7 @@ rho = 1 * sind(theta_inc);
 n_vacuum = 1.0; 
 n_BK7    = 1.516; 
 n_PEC    = 1000i;               % Perfect Conductor
-blaze_angle_deg = 13.5;         % [deg]
+blaze_angle_deg = 2;         % [deg]
 num_steps = 100;                 
 blaze_height = period * tand(blaze_angle_deg); % [nm]
 step_height = blaze_height / num_steps;        % [nm]
